@@ -65,9 +65,9 @@ else:
 
 fname = "jenkins-%s.tar.gz" % datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 if ret == 0:
-	ret = os.system("scp -oStrictHostKeyChecking=no -oBatchMode=yes jenkins.sh jenkins-ct.sh %s:" % droplet.ip_address)
+	ret = os.system("scp -oStrictHostKeyChecking=no -oBatchMode=yes -r jenkins-scripts/ %s:" % droplet.ip_address)
 if ret == 0:
-	ret = os.system("%s %s bash -x jenkins-ct.sh" % (SSH, droplet.ip_address))
+	ret = os.system("%s %s bash -x jenkins-scripts/jenkins-ct.sh jenkins.sh" % (SSH, droplet.ip_address))
 	if ret:
 		os.system("%s %s tar -czf %s -C criu ." % (SSH, droplet.ip_address, fname))
 		os.system("scp -oStrictHostKeyChecking=no -oBatchMode=yes %s:%s %s" % (droplet.ip_address, fname, LOGS))
