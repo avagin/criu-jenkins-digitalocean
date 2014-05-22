@@ -10,8 +10,8 @@ LOGS="/home/"
 #image_name = "jenkins-3.11-template"
 image_name = sys.argv[1]
 sshkey_name = "jenkins"
-vm_name = "jenkins-test"
-load_kernel = sys.argv[2] == "yes"
+vm_name = sys.argv[2]
+load_kernel = sys.argv[3] == "yes"
 
 manager = digitalocean.Manager(
 			client_id=digoc_config.client_id,
@@ -37,7 +37,8 @@ droplet = digitalocean.Droplet(
 			client_id=digoc_config.client_id,
 			api_key=digoc_config.api_key,
 			name = vm_name,
-			size_id=66, #512Mb
+#			size_id=66, #512Mb
+			size_id=63, #1024Mb
 			image_id=image.id,
 			region_id=5, #ams2
 			ssh_key_ids=sshkey.id)
@@ -71,9 +72,11 @@ if ret == 0:
 
 if ret == 0 and load_kernel:
 	ret = os.system("%s %s bash -x jenkins-scripts/load-kernel.sh /root/linux-next" % (SSH, droplet.ip_address))
+	if ret == 0:
+		os.system("%s %s kexec -e" % (SSH, droplet.ip_address))
 	stime = time.time()
 	while time.time() - stime < 60 and ret == 0:
-		if os.system("%s %s true" % (SSH, droplet.ip_address)):
+		if os.system("%s %s true" % (SSH, droplet.ip_address)) == 0:
 			break;
 		time.sleep(1)
 

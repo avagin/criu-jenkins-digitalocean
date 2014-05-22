@@ -3,7 +3,6 @@ home_dir=$(dirname `readlink -f $0`)
 kernel_dir=$1
 cd $kernel_dir
 git fetch
-exit
 git checkout -f origin/master
 git describe HEAD
 git clean -dxf
