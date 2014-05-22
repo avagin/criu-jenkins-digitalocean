@@ -7,9 +7,11 @@ import digoc_config
 
 SSH = "ssh -oStrictHostKeyChecking=no -oBatchMode=yes -oServerAliveInterval=15 -oServerAliveCountMax=60 -oPreferredAuthentications=publickey"
 LOGS="/home/"
-image_name = "jenkins-3.11-template"
+#image_name = "jenkins-3.11-template"
+image_name = sys.argv[1]
 sshkey_name = "jenkins"
 vm_name = "jenkins-test"
+load_kernel = sys.argv[2] == "yes"
 
 manager = digitalocean.Manager(
 			client_id=digoc_config.client_id,
@@ -66,6 +68,15 @@ else:
 fname = "jenkins-%s.tar.gz" % datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 if ret == 0:
 	ret = os.system("scp -oStrictHostKeyChecking=no -oBatchMode=yes -r jenkins-scripts/ %s:" % droplet.ip_address)
+
+if ret == 0 and load_kernel:
+	ret = os.system("%s %s bash -x jenkins-scripts/load-kernel.sh /root/linux-next" % (SSH, droplet.ip_address))
+	stime = time.time()
+	while time.time() - stime < 60 and ret == 0:
+		if os.system("%s %s true" % (SSH, droplet.ip_address)):
+			break;
+		time.sleep(1)
+
 if ret == 0:
 	ret = os.system("%s %s bash -x jenkins-scripts/jenkins-ct.sh jenkins.sh" % (SSH, droplet.ip_address))
 	if ret:
