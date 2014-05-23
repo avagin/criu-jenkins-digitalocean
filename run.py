@@ -1,44 +1,59 @@
+import os, sys, time, datetime
+from optparse import OptionParser
 import digitalocean
-import datetime
-import time
-import os
-import sys
 import digoc_config
 
 SSH = "ssh -oStrictHostKeyChecking=no -oBatchMode=yes -oServerAliveInterval=15 -oServerAliveCountMax=60 -oPreferredAuthentications=publickey"
 LOGS="/home/"
-#image_name = "jenkins-3.11-template"
-image_name = sys.argv[1]
+#opts.image_name = "jenkins-3.11-template"
+
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option("--image-name")
+parser.add_option("--vm-name")
+parser.add_option("--load-kernel", action="store_true", default=False)
+parser.add_option("--size", default="512MB")
+opts, args =  parser.parse_args()
+
+print opts
+print args
+
+if args or (not opts.image_name) or (not opts.vm_name):
+	parser.print_help()
+	sys.exit(1)
+
 sshkey_name = "jenkins"
-vm_name = sys.argv[2]
-load_kernel = sys.argv[3] == "yes"
 
 manager = digitalocean.Manager(
 			client_id=digoc_config.client_id,
 			api_key=digoc_config.api_key)
 
 images = manager.get_all_images()
-image = None
 for image in images:
-	if (image.name == image_name):
+	if (image.name == opts.image_name):
 		break
 else:
-	raise Exception("Unable to find the %s image", image_name)
+	raise Exception("Unable to find the %s image", opts.image_name)
 
 keys = manager.get_all_sshkeys()
-sshkey = None
 for sshkey in keys:
 	if (sshkey.name == sshkey_name):
 		break
 else:
 	raise Exception("Unable to find the %s sshkey", sshkey_name)
 
+sizes = manager.get_all_sizes()
+for size in sizes:
+	if (size.name == opts.size):
+		break
+else:
+	raise Exception("Unable to find the %s sshkey", opts.size)
+
 droplet = digitalocean.Droplet(
 			client_id=digoc_config.client_id,
 			api_key=digoc_config.api_key,
-			name = vm_name,
-#			size_id=66, #512Mb
-			size_id=63, #1024Mb
+			name = opts.vm_name,
+			size_id=size.id,
 			image_id=image.id,
 			region_id=5, #ams2
 			ssh_key_ids=sshkey.id)
@@ -70,7 +85,7 @@ fname = "jenkins-%s.tar.gz" % datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 if ret == 0:
 	ret = os.system("scp -oStrictHostKeyChecking=no -oBatchMode=yes -r jenkins-scripts/ %s:" % droplet.ip_address)
 
-if ret == 0 and load_kernel:
+if ret == 0 and opts.load_kernel:
 	ret = os.system("%s %s bash -x jenkins-scripts/load-kernel.sh /root/linux-next" % (SSH, droplet.ip_address))
 	if ret == 0:
 		os.system("%s %s kexec -e" % (SSH, droplet.ip_address))
