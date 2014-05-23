@@ -106,4 +106,5 @@ wait(droplet)
 #	droplet.take_snapshot(fname)
 #	wait(droplet)
 droplet.destroy()
-sys.exit(ret)
+if ret:
+	sys.exit(1)
