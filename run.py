@@ -2,6 +2,7 @@ import os, sys, time, datetime
 from optparse import OptionParser
 import digitalocean
 import digoc_config
+import requests
 
 SSH = "ssh -oStrictHostKeyChecking=no -oBatchMode=yes -oServerAliveInterval=15 -oServerAliveCountMax=60 -oPreferredAuthentications=publickey"
 LOGS="/home/"
@@ -49,6 +50,15 @@ for size in sizes:
 else:
 	raise Exception("Unable to find the %s sshkey", opts.size)
 
+def change_kernel(vm_id):
+	headers = {'Authorization':'Bearer ' + digoc_config.token}
+	headers['content-type'] = 'application/json'
+	#  {u'id': 453,
+	#   u'name': u'* Fedora 20 x64 vmlinuz-3.11.10-301.fc20.x86_64',
+	#   u'version': u'3.11.10-301.fc20.x86_64'},
+	req = requests.post("https://api.digitalocean.com/v2/droplets/%s/actions" % vm_id, headers=headers, params={"type" : "change_kernel", "kernel" : 453})
+	print req.json()
+
 droplet = digitalocean.Droplet(
 			client_id=digoc_config.client_id,
 			api_key=digoc_config.api_key,
@@ -70,6 +80,11 @@ def wait(droplet):
 	droplet.load()
 
 wait(droplet)
+if not opts.load_kernel:
+	change_kernel(droplet.id)
+	time.sleep(10) # FIXME
+	droplet.reboot()
+	time.sleep(10) # FIXME
 
 print droplet.ip_address
 
