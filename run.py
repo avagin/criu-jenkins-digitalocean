@@ -81,10 +81,12 @@ def wait(droplet):
 
 wait(droplet)
 if not opts.load_kernel:
+	droplet.shutdown()
+	wait(droplet)
 	change_kernel(droplet.id)
-	time.sleep(10) # FIXME
-	droplet.reboot()
-	time.sleep(10) # FIXME
+	time.sleep(60) # FIXME
+	droplet.power_on()
+	wait(droplet)
 
 print droplet.ip_address
 
