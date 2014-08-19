@@ -1,8 +1,10 @@
 import os, sys, time, datetime
+sys.path.append("/root/git/python-digitalocean")
 from optparse import OptionParser
 import digitalocean
 import digoc_config
 import requests
+
 
 SSH = "ssh -oStrictHostKeyChecking=no -oBatchMode=yes -oServerAliveInterval=15 -oServerAliveCountMax=60 -oPreferredAuthentications=publickey"
 LOGS="/home/"
@@ -13,7 +15,7 @@ parser = OptionParser()
 parser.add_option("--image-name")
 parser.add_option("--vm-name")
 parser.add_option("--load-kernel", action="store_true", default=False)
-parser.add_option("--size", default="512MB")
+parser.add_option("--size", default="512Mb")
 opts, args =  parser.parse_args()
 
 print opts
@@ -26,8 +28,7 @@ if args or (not opts.image_name) or (not opts.vm_name):
 sshkey_name = "jenkins"
 
 manager = digitalocean.Manager(
-			client_id=digoc_config.client_id,
-			api_key=digoc_config.api_key)
+			token = digoc_config.token)
 
 images = manager.get_all_images()
 for image in images:
@@ -43,48 +44,40 @@ for sshkey in keys:
 else:
 	raise Exception("Unable to find the %s sshkey", sshkey_name)
 
-sizes = manager.get_all_sizes()
-for size in sizes:
-	if (size.name == opts.size):
-		break
-else:
-	raise Exception("Unable to find the %s sshkey", opts.size)
+def change_kernel(d):
+	for k in d.get_kernel_available():
+		if ("-3.11" in k.name) and ("x86_64" in k.name):
+			break
+	else:
+		raise Exception("The required kernel is not avaliable")
 
-def change_kernel(vm_id):
-	headers = {'Authorization':'Bearer ' + digoc_config.token}
-	headers['content-type'] = 'application/json'
-	#  {u'id': 453,
-	#   u'name': u'* Fedora 20 x64 vmlinuz-3.11.10-301.fc20.x86_64',
-	#   u'version': u'3.11.10-301.fc20.x86_64'},
-	req = requests.post("https://api.digitalocean.com/v2/droplets/%s/actions" % vm_id, headers=headers, params={"type" : "change_kernel", "kernel" : 453})
-	print req.json()
+	d.change_kernel(k)
 
 droplet = digitalocean.Droplet(
-			client_id=digoc_config.client_id,
-			api_key=digoc_config.api_key,
+			token = digoc_config.token,
 			name = opts.vm_name,
-			size_id=size.id,
-			image_id=image.id,
-			region_id=5, #ams2
-			ssh_key_ids=sshkey.id)
+			size = opts.size,
+			image = image.id,
+			region = "ams2",
+			ssh_keys = str(sshkey.id))
 droplet.create()
 
 def wait(droplet):
 	events = droplet.get_events()
-	event = events[-1]
-	while event.percentage != "100":
-		time.sleep(1)
-		event.load()
-		print event.percentage
+	for event in events:
+		while event.status == u'in-progress':
+			time.sleep(1)
+			event.load()
+			print getattr(event, "percentage", ".")
 
 	droplet.load()
 
 wait(droplet)
 if not opts.load_kernel:
-	change_kernel(droplet.id)
-	time.sleep(10) # FIXME
+	change_kernel(droplet)
+	wait(droplet)
 	droplet.reboot()
-	time.sleep(10) # FIXME
+	wait(droplet)
 
 print droplet.ip_address
 
