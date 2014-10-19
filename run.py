@@ -66,13 +66,17 @@ def change_kernel(vm_id):
 	req = requests.post("https://api.digitalocean.com/v2/droplets/%s/actions" % vm_id, headers=headers, params={"type" : "change_kernel", "kernel" : 453})
 	print req.json()
 
+region = 5
+if "linux-next" in opts.image_name:
+	region = 3
+
 droplet = digitalocean.Droplet(
 			client_id=digoc_config.client_id,
 			api_key=digoc_config.api_key,
 			name = opts.vm_name,
 			size_id=size.id,
 			image_id=image.id,
-			region_id=5, #ams2
+			region_id=region, #ams2
 			ssh_key_ids=sshkey.id)
 droplet.create()
 
