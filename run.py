@@ -117,6 +117,7 @@ if ret == 0 and opts.load_kernel:
 	ret = run_cmd("%s %s bash -x jenkins-scripts/load-kernel.sh /root/linux-next" % (SSH, droplet.ip_address))
 	if ret == 0:
 		run_cmd("%s %s kexec -e" % (SSH, droplet.ip_address))
+	time.sleep(10)
 	stime = time.time()
 	while time.time() - stime < 60 and ret == 0:
 		if run_cmd("%s %s true" % (SSH, droplet.ip_address)) == 0:
