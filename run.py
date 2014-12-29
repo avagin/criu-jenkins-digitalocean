@@ -128,6 +128,7 @@ if ret == 0 and opts.load_kernel:
 
 if ret == 0:
 	run_cmd("%s %s  modprobe ip6table_filter" % (SSH, droplet.ip_address))
+	run_cmd("%s %s yum install -y libaio-devel.x86_64" % (SSH, droplet.ip_address))
 	ret = run_cmd("%s %s bash -x jenkins-scripts/jenkins-ct.sh jenkins.sh" % (SSH, droplet.ip_address))
 	if ret:
 		run_cmd("%s %s tar -czf %s -C criu ." % (SSH, droplet.ip_address, fname))
