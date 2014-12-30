@@ -131,8 +131,10 @@ if ret == 0:
 	run_cmd("%s %s yum install -y libaio-devel.x86_64" % (SSH, droplet.ip_address))
 	ret = run_cmd("%s %s bash -x jenkins-scripts/jenkins-ct.sh jenkins.sh" % (SSH, droplet.ip_address))
 	if ret:
-		run_cmd("%s %s tar -czf %s -C criu ." % (SSH, droplet.ip_address, fname))
-		run_cmd("scp -oStrictHostKeyChecking=no -oBatchMode=yes %s:%s %s" % (droplet.ip_address, fname, LOGS))
+		run_cmd("%s %s dmesg > dmesg.log" % (SSH, droplet.ip_address))
+		run_cmd("%s %s tar -cz -C criu . > log.tar.gz" % (SSH, droplet.ip_address))
+#		run_cmd("%s %s tar -czf %s -C criu ." % (SSH, droplet.ip_address, fname))
+#		run_cmd("scp -oStrictHostKeyChecking=no -oBatchMode=yes %s:%s %s" % (droplet.ip_address, fname, LOGS))
 droplet.shutdown()
 wait(droplet)
 #if ret:
