@@ -119,10 +119,12 @@ if ret == 0 and opts.load_kernel:
 		run_cmd("%s %s kexec -e" % (SSH, droplet.ip_address))
 	time.sleep(10)
 	stime = time.time()
-	while time.time() - stime < 60 and ret == 0:
+	for i in xrange(10):
+		if ret != 0:
+			break
 		if run_cmd("%s %s true" % (SSH, droplet.ip_address)) == 0:
 			break;
-		time.sleep(1)
+		time.sleep(30)
 	else:
 		ret = 1
 
