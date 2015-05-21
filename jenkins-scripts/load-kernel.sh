@@ -1,9 +1,11 @@
 set -e
 home_dir=$(dirname `readlink -f $0`)
 kernel_dir=$1
+kernel_commit=$2
 cd $kernel_dir
 git fetch
-git checkout -f origin/master
+git fetch --tags
+git checkout -f $kernel_commit
 git describe HEAD
 git clean -dxf
 cp $home_dir/config .config

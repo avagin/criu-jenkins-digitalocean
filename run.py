@@ -20,6 +20,7 @@ parser.add_option("--image-name")
 parser.add_option("--vm-name")
 parser.add_option("--load-kernel", action="store_true", default=False)
 parser.add_option("--size", default="512MB")
+parser.add_option("--commit", default="origin/master")
 opts, args =  parser.parse_args()
 
 print opts
@@ -114,7 +115,7 @@ if ret == 0:
 	ret = run_cmd("scp -oStrictHostKeyChecking=no -oBatchMode=yes -r jenkins-scripts/ %s:" % droplet.ip_address)
 
 if ret == 0 and opts.load_kernel:
-	ret = run_cmd("%s %s bash -x jenkins-scripts/load-kernel.sh /root/linux-next" % (SSH, droplet.ip_address))
+	ret = run_cmd("%s %s bash -x jenkins-scripts/load-kernel.sh /root/linux-next %s" % (SSH, droplet.ip_address, opts.commit))
 	if ret == 0:
 		run_cmd("%s %s kexec -e" % (SSH, droplet.ip_address))
 	time.sleep(10)
