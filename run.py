@@ -21,6 +21,7 @@ parser.add_option("--vm-name")
 parser.add_option("--load-kernel", action="store_true", default=False)
 parser.add_option("--size", default="512MB")
 parser.add_option("--commit", default="origin/master")
+parser.add_option("--preserve-vm", action="store_true", default=False)
 opts, args =  parser.parse_args()
 
 print opts
@@ -138,11 +139,12 @@ if ret == 0:
 		run_cmd("%s %s tar -cz -C criu . > log.tar.gz" % (SSH, droplet.ip_address))
 #		run_cmd("%s %s tar -czf %s -C criu ." % (SSH, droplet.ip_address, fname))
 #		run_cmd("scp -oStrictHostKeyChecking=no -oBatchMode=yes %s:%s %s" % (droplet.ip_address, fname, LOGS))
-droplet.shutdown()
-wait(droplet)
-#if ret:
-#	droplet.take_snapshot(fname)
-#	wait(droplet)
-droplet.destroy()
+if not opts.preserve_vm:
+	droplet.shutdown()
+	wait(droplet)
+	#if ret:
+	#	droplet.take_snapshot(fname)
+	#	wait(droplet)droplet.destroy()
+	droplet.destroy()
 if ret:
 	sys.exit(1)
