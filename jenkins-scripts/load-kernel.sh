@@ -6,6 +6,8 @@ cd $kernel_dir
 git fetch
 git fetch --tags
 git checkout -f $kernel_commit
+git config --global user.email "avagin@openvz.org"
+git config --global user.name "Andrew Vagin"
 git am $home_dir/fbcon.patch
 git describe HEAD
 git clean -dxf
