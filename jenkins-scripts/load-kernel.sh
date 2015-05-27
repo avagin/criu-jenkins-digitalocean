@@ -6,6 +6,7 @@ cd $kernel_dir
 git fetch
 git fetch --tags
 git checkout -f $kernel_commit
+git am $home_dir/fbcon.patch
 git describe HEAD
 git clean -dxf
 cp $home_dir/config .config

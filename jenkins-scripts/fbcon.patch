@@ -1,0 +1,127 @@
+                                                                                                                                                                                                                                                               
+Delivered-To: avagin@gmail.com
+Received: by 10.25.151.17 with SMTP id z17csp214752lfd;
+        Thu, 21 May 2015 01:04:21 -0700 (PDT)
+X-Received: by 10.66.66.65 with SMTP id d1mr3301500pat.22.1432195460903;
+        Thu, 21 May 2015 01:04:20 -0700 (PDT)
+Return-Path: <linux-kernel-owner@vger.kernel.org>
+Received: from vger.kernel.org (vger.kernel.org. [209.132.180.67])
+        by mx.google.com with ESMTP id l5si30474710pdj.105.2015.05.21.01.03.17;
+        Thu, 21 May 2015 01:04:20 -0700 (PDT)
+Received-SPF: pass (google.com: best guess record for domain of linux-kernel-owner@vger.kernel.org designates 209.132.180.67 as permitted sender) client-ip=209.132.180.67;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: best guess record for domain of linux-kernel-owner@vger.kernel.org designates 209.132.180.67 as permitted sender) smtp.mail=linux-kernel-owner@vger.kernel.org;
+       dkim=neutral (body hash did not verify) header.i=@;
+       dmarc=fail (p=NONE dis=NONE) header.from=gmail.com
+Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
+	id S1754470AbbEUH6J (ORCPT <rfc822;KarlosBlanca@gmail.com>
+	+ 99 others); Thu, 21 May 2015 03:58:09 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:36160 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457AbbEUH6H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 May 2015 03:58:07 -0400
+Received: by wgbgq6 with SMTP id gq6so76912823wgb.3;
+        Thu, 21 May 2015 00:58:05 -0700 (PDT)
+DKIM-Signature:	v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20120113;
+        h=from:to:cc:subject:date:message-id;
+        bh=0F1Ud5NRWH97tJQn+AYAQENnwuLMrLZ7d1q/GRDQoWg=;
+        b=oBe+/763yFmOimySGfs+/16tNePvjvZnqd2n4tYjZ7qSqic+ArDaA8cGcaYYj+Fo90
+         yTipOmhyqlVytOYDRyVd3wUe1Z4ij5LfnIBKzNGbXJh6ioUdCpdobdEcP1zyJl7inA/3
+         y+s+2OxV2zp5YIzSiHw4lTBogARWLKfNcQjLSPIfvnL48TpxfDpfmzO5WG5pF277+Do6
+         h+QTXvXVFep/7NQMkzenF7/32y4a7RqWCPwiN+rEQr05JrTM0u0fRA69wdvHgDTFG3fY
+         UbJZiVMRnXpm55yrxHk/owJUzD2flr+kMCTbkpI4nOtjD8NL7LBlB+Bha1+wyaeSlHNT
+         L2Yw==
+X-Received: by 10.180.76.231 with SMTP id n7mr3691042wiw.44.1432195085473;
+        Thu, 21 May 2015 00:58:05 -0700 (PDT)
+Received: from localhost (port-6561.pppoe.wtnet.de. [84.46.25.186])
+        by mx.google.com with ESMTPSA id vy5sm30740923wjc.33.2015.05.21.00.58.04
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Thu, 21 May 2015 00:58:04 -0700 (PDT)
+From:	Thierry Reding <thierry.reding@gmail.com>
+To:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc:	Kevin Hilman <khilman@kernel.org>,
+	Scot Doyle <lkml14@scotdoyle.com>,
+	Daniel Stone <daniel@fooishbar.org>,
+	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+	Tomi Valkeinen <tomi.valkeinen@ti.com>,
+	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fbcon: Avoid deleting a timer in IRQ context
+Date:	Thu, 21 May 2015 09:58:03 +0200
+Message-Id: <1432195083-25005-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.4.1
+Sender:	linux-kernel-owner@vger.kernel.org
+Precedence: bulk
+List-ID: <linux-kernel.vger.kernel.org>
+X-Mailing-List:	linux-kernel@vger.kernel.org
+
+From: Thierry Reding <treding@nvidia.com>
+
+Commit 27a4c827c34a ("fbcon: use the cursor blink interval provided by
+vt") unconditionally removes the cursor blink timer. Unfortunately that
+wreaks havoc under some circumstances. An easily reproducible way is to
+use both the framebuffer console and a debug serial port as the console
+output for kernel messages (e.g. "console=ttyS0 console=tty1" on the
+kernel command-line. Upon boot this triggers a warning from within the
+del_timer_sync() function because it is called from IRQ context:
+
+	[    5.070096] ------------[ cut here ]------------
+	[    5.070110] WARNING: CPU: 0 PID: 0 at ../kernel/time/timer.c:1098 del_timer_sync+0x4c/0x54()
+	[    5.070115] Modules linked in:
+	[    5.070120] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 4.1.0-rc4-next-20150519 #1
+	[    5.070123] Hardware name: SAMSUNG EXYNOS (Flattened Device Tree)
+	[    5.070142] [] (unwind_backtrace) from [] (show_stack+0x10/0x14)
+	[    5.070156] [] (show_stack) from [] (dump_stack+0x70/0xbc)
+	[    5.070164] [] (dump_stack) from [] (warn_slowpath_common+0x74/0xb0)
+	[    5.070169] [] (warn_slowpath_common) from [] (warn_slowpath_null+0x1c/0x24)
+	[    5.070174] [] (warn_slowpath_null) from [] (del_timer_sync+0x4c/0x54)
+	[    5.070183] [] (del_timer_sync) from [] (fbcon_del_cursor_timer+0x2c/0x40)
+	[    5.070190] [] (fbcon_del_cursor_timer) from [] (fbcon_cursor+0x9c/0x180)
+	[    5.070198] [] (fbcon_cursor) from [] (hide_cursor+0x30/0x98)
+	[    5.070204] [] (hide_cursor) from [] (vt_console_print+0x2a8/0x340)
+	[    5.070212] [] (vt_console_print) from [] (call_console_drivers.constprop.23+0xc8/0xec)
+	[    5.070218] [] (call_console_drivers.constprop.23) from [] (console_unlock+0x498/0x4f0)
+	[    5.070223] [] (console_unlock) from [] (vprintk_emit+0x1f0/0x508)
+	[    5.070228] [] (vprintk_emit) from [] (vprintk_default+0x24/0x2c)
+	[    5.070234] [] (vprintk_default) from [] (printk+0x70/0x88)
+
+After which the system starts spewing all kinds of weird and seemingly
+unrelated error messages.
+
+This commit fixes this by restoring the condition under which the call
+to fbcon_del_cursor_timer() happens.
+
+Reported-by: Daniel Stone <daniel@fooishbar.org>
+Reported-by: Kevin Hilman <khilman@kernel.org>
+Tested-by: Kevin Hilman <khilman@linaro.org>
+Tested-by: Scot Doyle <lkml14@scotdoyle.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/video/console/fbcon.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index 05b1d1a71ef9..658c34bb9076 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -1310,8 +1310,9 @@ static void fbcon_cursor(struct vc_data *vc, int mode)
+ 		return;
+ 
+ 	ops->cur_blink_jiffies = msecs_to_jiffies(vc->vc_cur_blink_ms);
+-	fbcon_del_cursor_timer(info);
+-	if (!(vc->vc_cursor_type & 0x10))
++	if (vc->vc_cursor_type & 0x10)
++		fbcon_del_cursor_timer(info);
++	else
+ 		fbcon_add_cursor_timer(info);
+ 
+ 	ops->cursor_flash = (mode == CM_ERASE) ? 0 : 1;
+-- 
+2.4.1
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
