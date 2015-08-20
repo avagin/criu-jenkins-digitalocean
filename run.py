@@ -116,6 +116,7 @@ if ret == 0:
 	ret = run_cmd("scp -oStrictHostKeyChecking=no -oBatchMode=yes -r jenkins-scripts/ %s:" % droplet.ip_address)
 
 if ret == 0 and opts.load_kernel:
+	run_cmd("%s %s yum install -y openssl-devel" % (SSH, droplet.ip_address))
 	ret = run_cmd("%s %s bash -x jenkins-scripts/load-kernel.sh /root/linux-next %s" % (SSH, droplet.ip_address, opts.commit))
 	if ret == 0:
 		run_cmd("%s %s kexec -e" % (SSH, droplet.ip_address))
@@ -132,7 +133,7 @@ if ret == 0 and opts.load_kernel:
 
 if ret == 0:
 	run_cmd("%s %s  modprobe ip6table_filter" % (SSH, droplet.ip_address))
-	run_cmd("%s %s yum install -y openssl-devel libcap-devel libaio-devel.x86_64 protobuf-devel.x86_64" % (SSH, droplet.ip_address))
+	run_cmd("%s %s yum install -y libcap-devel libaio-devel.x86_64 protobuf-devel.x86_64" % (SSH, droplet.ip_address))
 	ret = run_cmd("%s %s bash -x jenkins-scripts/jenkins-ct.sh jenkins.sh" % (SSH, droplet.ip_address))
 	if ret:
 		run_cmd("%s %s dmesg > dmesg.log" % (SSH, droplet.ip_address))
