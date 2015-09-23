@@ -106,7 +106,9 @@ print droplet.ip_address
 ret = 0
 for i in xrange(60):
 	run_cmd("ip neig flush all");
-	if run_cmd("ping -c 1 -W 1 %s" % droplet.ip_address) == 0:
+	if run_cmd("ping -c 1 -W 1 %s" % droplet.ip_address) != 0:
+		continue;
+	if run_cmd("%s %s true" % (SSH, droplet.ip_address)) == 0:
 		break;
 else:
 	ret = 1
