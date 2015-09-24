@@ -3,6 +3,7 @@ git fetch &&
 git rebase origin/master &&
 git clean -dxf &&
 make -j 2 &&
+echo 0 > /sys/fs/cgroup/cpu/tasks
 export ZDTM_ARGS="-x '.*\(maps01\|maps04\|tcpbuf\)'"
 make test &&
 #bash -x test/zdtm.sh -C -x '.*\(maps01\|maps04\|tcpbuf\)' &&
