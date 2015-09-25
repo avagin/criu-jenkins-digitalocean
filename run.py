@@ -33,9 +33,8 @@ if args or (not opts.image_name) or (not opts.vm_name):
 
 sshkey_name = "jenkins"
 
-manager = digitalocean.Manager(
-			client_id=digoc_config.client_id,
-			api_key=digoc_config.api_key)
+manager = digitalocean.Manager()
+manager.token = digoc_config.token
 
 images = manager.get_all_images()
 for image in images:
@@ -51,13 +50,6 @@ for sshkey in keys:
 else:
 	raise Exception("Unable to find the %s sshkey", sshkey_name)
 
-sizes = manager.get_all_sizes()
-for size in sizes:
-	if (size.name == opts.size):
-		break
-else:
-	raise Exception("Unable to find the %s sshkey", opts.size)
-
 def change_kernel(vm_id):
 	print "Boot the 3.11 kernel"
 	headers = {'Authorization':'Bearer ' + digoc_config.token}
@@ -68,27 +60,26 @@ def change_kernel(vm_id):
 	req = requests.post("https://api.digitalocean.com/v2/droplets/%s/actions" % vm_id, headers=headers, params={"type" : "change_kernel", "kernel" : 453})
 	print req.json()
 
-region = 5
+region = "ams2"
 if "linux-next" in opts.image_name:
-	region = 3
+	region = "sfo1"
 
 droplet = digitalocean.Droplet(
-			client_id=digoc_config.client_id,
-			api_key=digoc_config.api_key,
+			token = digoc_config.token,
 			name = opts.vm_name,
-			size_id=size.id,
-			image_id=image.id,
-			region_id=region, #ams2
-			ssh_key_ids=sshkey.id)
+			size = opts.size,
+			image = image.id,
+			region = region, #ams2
+			ssh_keys=[ sshkey ])
 droplet.create()
 
 def wait(droplet):
 	events = droplet.get_events()
-	event = events[-1]
-	while event.percentage != "100":
-		time.sleep(1)
-		event.load()
-		print event.percentage
+	for event in events:
+		while event.status == u'in-progress':
+			time.sleep(1)
+			event.load()
+			print getattr(event, "percentage", ".")
 
 	droplet.load()
 
@@ -96,8 +87,13 @@ wait(droplet)
 if not opts.load_kernel:
 	droplet.shutdown()
 	wait(droplet)
-	change_kernel(droplet.id)
-	time.sleep(60) # FIXME
+	for k in droplet.get_kernel_available():
+		if k.id == 453:
+			print k.name
+			break
+	droplet.change_kernel(k)
+	wait(droplet)
+	time.sleep(30)
 	droplet.power_on()
 	wait(droplet)
 
