@@ -1,8 +1,8 @@
 import os, sys, time, datetime
 from optparse import OptionParser
 import digitalocean
-import digoc_config
 import requests
+import imp
 
 def run_cmd(cmd):
 	print "Run - ", cmd
@@ -22,10 +22,13 @@ parser.add_option("--load-kernel", action="store_true", default=False)
 parser.add_option("--size", default="512MB")
 parser.add_option("--commit", default="origin/master")
 parser.add_option("--preserve-vm", action="store_true", default=False)
+parser.add_option("--config")
 opts, args =  parser.parse_args()
 
 print opts
 print args
+
+digoc_config = imp.load_source("digoc_config", opts.config)
 
 if args or (not opts.image_name) or (not opts.vm_name):
 	parser.print_help()
