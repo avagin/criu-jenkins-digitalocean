@@ -86,10 +86,32 @@ def wait(droplet):
 
 	droplet.load()
 
+def wait_ssh(ipaddr):
+	global SSH
+	ret = 0
+	for i in xrange(60):
+		run_cmd("ip neig flush all");
+		if run_cmd("ping -c 1 -W 1 %s" % ipaddr) != 0:
+			continue;
+		if run_cmd("%s %s true" % (SSH, ipaddr)) == 0:
+			break;
+	else:
+		ret = 1
+	return ret
+
+
 wait(droplet)
+
+print droplet.ip_address
+ret = wait_ssh(droplet.ip_address)
+
 if not opts.load_kernel:
+	print "Stop VM"
+	run_cmd("%s %s halt -p" % (SSH, droplet.ip_address))
 	droplet.shutdown()
 	wait(droplet)
+	time.sleep(30)
+	print "Switch kernel"
 	for k in droplet.get_kernel_available():
 		if k.id == 453:
 			print k.name
@@ -97,20 +119,12 @@ if not opts.load_kernel:
 	droplet.change_kernel(k)
 	wait(droplet)
 	time.sleep(30)
+	print "Start VM"
 	droplet.power_on()
 	wait(droplet)
 
 print droplet.ip_address
-
-ret = 0
-for i in xrange(60):
-	run_cmd("ip neig flush all");
-	if run_cmd("ping -c 1 -W 1 %s" % droplet.ip_address) != 0:
-		continue;
-	if run_cmd("%s %s true" % (SSH, droplet.ip_address)) == 0:
-		break;
-else:
-	ret = 1
+ret = wait_ssh(droplet.ip_address)
 
 fname = "jenkins-%s.tar.gz" % datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 if ret == 0:
