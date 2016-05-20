@@ -1,6 +1,6 @@
 cd ~/criu &&
 git fetch &&
-git rebase origin/master &&
+git checkout -f origin/criu-dev &&
 git clean -dxf &&
 make -j 2 &&
 make -j 2 -C test/zdtm &&
