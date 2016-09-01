@@ -7,6 +7,7 @@ git checkout -f origin/criu-dev &&
 git fetch avagin &&
 git checkout -f avagin/linux-next &&
 git clean -dxf &&
+export SKIP_TRAVIS_PREP=1 &&
 ./scripts/travis/travis-tests &&
 echo 0 > /sys/fs/cgroup/cpu/tasks &&
 ./test/zdtm.py run -T cgroup &&
