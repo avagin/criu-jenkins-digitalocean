@@ -1,6 +1,11 @@
+#!/bin/bash
+set -x
 cd ~/criu &&
+git remote add avagin https://github.com/avagin/criu.git
 git fetch &&
 git checkout -f origin/criu-dev &&
+git fetch avagin &&
+git checkout -f avagin/linux-next &&
 git clean -dxf &&
 ./scripts/travis/travis-tests &&
 echo 0 > /sys/fs/cgroup/cpu/tasks &&
