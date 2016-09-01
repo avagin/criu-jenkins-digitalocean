@@ -2,10 +2,9 @@ cd ~/criu &&
 git fetch &&
 git checkout -f origin/criu-dev &&
 git clean -dxf &&
-make -j 2 &&
-make -j 2 -C test/zdtm &&
+./scripts/travis/travis-tests &&
 echo 0 > /sys/fs/cgroup/cpu/tasks &&
-./test/zdtm.py run --all --report report --parallel 2 -x 'maps04' -x 'maps01' &&
+./test/zdtm.py run -T cgroup &&
 true || exit 1
 
 #bash -x test/zdtm.sh -C -x '.*\(maps01\|maps04\|tcpbuf\)' &&
