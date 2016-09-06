@@ -8,8 +8,8 @@ git fetch avagin &&
 git checkout -f avagin/linux-next &&
 git clean -dxf &&
 export SKIP_TRAVIS_PREP=1 &&
-./scripts/travis/travis-tests &&
 echo 0 > /sys/fs/cgroup/cpu/tasks &&
+./scripts/travis/travis-tests &&
 ./test/zdtm.py run -T cgroup &&
 true || exit 1
 
