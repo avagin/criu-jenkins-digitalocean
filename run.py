@@ -65,7 +65,7 @@ def change_kernel(vm_id):
 
 region = "ams2"
 if "linux-next" in opts.image_name:
-	region = "sfo1"
+	region = "sfo2"
 
 droplet = digitalocean.Droplet(
 			token = digoc_config.token,
