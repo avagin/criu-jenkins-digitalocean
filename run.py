@@ -95,6 +95,7 @@ def wait_ssh(ipaddr):
 			continue;
 		if run_cmd("%s %s true" % (SSH, ipaddr)) == 0:
 			break;
+                time.sleep(5)
 	else:
 		ret = 1
 	return ret
