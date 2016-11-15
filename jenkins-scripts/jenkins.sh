@@ -9,6 +9,7 @@ git checkout -f origin/criu-dev
 git clean -dxf
 export SKIP_TRAVIS_PREP=1
 echo 0 > /sys/fs/cgroup/cpu/tasks
+uname -a | grep '\s3\.11' && truncate -s 0 test/abrt.sh || true
 ./scripts/travis/travis-tests
 ./test/zdtm.py run -T cgroup
 
