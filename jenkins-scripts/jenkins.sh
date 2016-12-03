@@ -10,6 +10,9 @@ git clean -dxf
 export SKIP_TRAVIS_PREP=1
 echo 0 > /sys/fs/cgroup/cpu/tasks
 uname -a | grep '\s3\.11' && truncate -s 0 test/abrt.sh || true
+
+./criu/criu check --feature mnt_id || sed -i "s/.*criu-inhfd.*//" scripts/travis/travis-tests
+
 ./scripts/travis/travis-tests
 ./test/zdtm.py run -T cgroup
 
